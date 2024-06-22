@@ -1,0 +1,164 @@
+---
+title: "Data Analysis Project"
+output: html_document
+date: "2024-01-23"
+---
+
+```{r}
+setwd("Untitled:/Users/amor/Desktop/archive")
+```
+
+```{r}
+apr_data <- read.csv("uber-raw-data-apr14.csv")
+apr_data
+may_data <- read.csv("uber-raw-data-may14.csv")
+may_data
+jun_data <- read.csv("uber-raw-data-jun14.csv")
+jun_data
+jul_data <- read.csv("uber-raw-data-jul14.csv")
+jul_data
+aug_data <- read.csv("uber-raw-data-aug14.csv")
+aug_data
+sep_data <- read.csv("uber-raw-data-sep14.csv")
+sep_data
+```
+
+```{r}
+data_2014 <- rbind(apr_data, may_data, jun_data, jul_data, aug_data, sep_data)
+View(data_2014)
+```
+
+```{r}
+data_2014$Date.Time <-as.POSIXct(data_2014$Date.Time, format ="%m/%d/%Y %H:%M:%S")
+View(data_2014)
+```
+
+```{r}
+data_2014$Time <- format(as.POSIXct(data_2014$Date.Time, format ="%m/%d/%Y %H:%M:%S"),format = "%H:%M:%S" )
+View(data_2014)
+```
+
+```{r}
+
+```
+
+```{r}
+library(ggplot2)
+install.packages("ggthemes")
+#library(ggthemes)
+#install.packages('lubridate')
+install.packages('DT')
+install.packages('scales')
+library(lubridate)
+library(dplyr)
+library(tidyr)
+library(DT)
+library(scales)
+```
+
+```{r}
+data_2014$Date.Time <- ymd_hms(data_2014$Date.Time)
+data_2014
+
+```
+
+```{r}
+data_2014$day <- factor(day(data_2014$Date.Time))
+data_2014$day
+```
+
+```{r}
+data_2014$month <- factor(month(data_2014$Date.Time, label=TRUE))
+data_2014$month
+```
+
+```{r}
+data_2014$year <- factor(year(data_2014$Date.Time))
+data_2014$year
+```
+
+```{r}
+data_2014$hour <- factor(hour(hms(data_2014$Time)))
+data_2014$minute <- factor(minute(hms(data_2014$Time)))
+data_2014$second <- factor(second(hms(data_2014$Time)))
+```
+
+```{r}
+hour_data <- data_2014 %>% group_by(hour) %>% summarise(Total=n())
+datatable(hour_data)
+ggplot(hour_data, aes(hour, Total)) + geom_bar(stat = "identity", fill="steelblue", color="red") +ggtitle("Trips by Hour") + scale_y_continuous(labels = comma)
+```
+
+```{r}
+month_hour <- data_2014 %>% group_by(month, hour) %>%
+  summarise(Total=n())
+datatable(month_hour)
+
+ggplot(month_hour, aes(hour, Total, fill=month)) +
+  geom_bar(stat = "identity") +
+  ggtitle("Trips by hour and month") +
+  scale_y_continuous(labels =comma)
+```
+
+```{r}
+day_data <- data_2014 %>% group_by(day) %>% summarise(Total=n())
+datatable(day_data)
+ggplot(day_data, aes(day, Total, fill="green"))+ geom_bar(stat='identity') + ggtitle("Trips by Day") +scale_y_continuous(labels=comma)
+```
+
+```{r}
+month_data <- data_2014 %>% group_by(month) %>% summarise(Total=n())
+datatable(month_data)
+ggplot(month_data, aes(month, Total, fill=month))+ geom_bar(stat='identity') + ggtitle("Trips in a month") +scale_y_continuous(labels=comma)
+```
+
+```{r}
+day_hour_data <-data_2014 %>% group_by(day, hour) %>% summarise(Total =n())
+
+ggplot(day_hour_data, aes(day, hour, fill=Total)) +
+  geom_tile(color="white")
+ggtitle("Heat Map by Hour and Day")
+```
+
+```{r}
+day_month_data <- data_2014 %>% group_by(month, day) %>% summarise(Total=n())
+ggplot(day_month_data,aes(day, month, fill=Total)) +
+  geom_tile(color="white")
+ggtitle("Heat Map of Days and Monthly Trip")
+```
+
+```{r}
+min_lat <- 40
+max_lat <- 40.91
+min_long <- -74.15
+max_long <- -74.7004
+
+
+ggplot(data_2014, aes(x=Lon, y=Lat)) +
+  geom_point(size =1, color="red") +
+  theme_map() +
+  ggtitle("NYC MAP BASED ON UBER RIDES")
+
+```
+
+```{r}
+data_2014$duration_minute <-as.numeric(difftime(lead(data_2014$Date.Time),data_2014$Date.Time, units = "mins"))
+```
+
+```{r}
+avg_duration_by_month <- data_2014 %>% group_by(month) %>% summarise(AverageDuration = mean(duration_minute, na.rm =T))
+datatable(avg_duration_by_month)
+
+ggplot(avg_duration_by_month, aes(x=month, y=AverageDuration)) +
+  geom_bar(stat="identity", fill="red") +
+  ggtitle('Average Ride Duration by Months') +
+  xlab("MONTH")
+ylab("Average Duration")
+```
+
+```{r}
+ggplot(data_2014, aes(x= duration_minute, fill= cut(duration_minute, breaks=c(0,10,20,30,40, Inf)))) +geom_histogram(binwidth = 5,  position = "identity") +
+  ggtitle("Distribution of Ride Durations for  Potential Customer Segments")
+xlab("Ride Duration in minutes")
+ylab("Frequency")
+```
